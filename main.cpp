@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <conio.h>
+#include /*<thread>*/"C:\MinGW\lib\gcc\mingw32\6.3.0\include\c++\thread"
+#include <chrono>
 
 using std::cout;
 using std::endl;
@@ -28,6 +30,7 @@ class GameEngine
 	static size_t _global_width;
 	static size_t _global_height;
 	static size_t _score;
+	static size_t _delay;
 
 	class Player
 	{
@@ -154,9 +157,11 @@ class GameEngine
 		}
 		cout << endl << endl;
 
-		for (int i = 0; i < _global_width - 5; ++i) cout << ' ';
+		for (size_t i = 0; i < _global_width - 5; ++i) cout << ' ';
 		cout << "SCORE = " << _score << endl;
 		system("cls");
+
+	 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 	}
 	//===============================================================================
@@ -164,7 +169,7 @@ class GameEngine
 	{
 	    system("cls");
 
-	    while(true)
+	    while (true)
 	    {
 	    	printField();
 	    }
