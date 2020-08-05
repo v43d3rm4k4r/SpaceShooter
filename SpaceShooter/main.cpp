@@ -18,9 +18,12 @@ static constexpr auto MINIMUM_HEIGHT = 10;
 static constexpr auto DEFAULT_GLOBAL_WIDTH = 15;
 static constexpr auto DEFAULT_GLOBAL_HEIGHT = 10;
 
+#define ENEMY '@'
+
 // TODO: UNICODE TEXT
 // TODO: 2 PLAYERS (Qt)
 // TODO: triangle as player
+// TODO: new game animation (wave)
 //===============================================================================
 struct Point
 {
@@ -34,6 +37,7 @@ class GameEngine
     static uint32_t _global_height;
     static uint32_t _score;
     static uint32_t _delay;
+    static bool is_first_call; // for resizing field model before game starts
 
 
 
@@ -106,6 +110,7 @@ class GameEngine
                 }
                 system("cls");
                 //player.setX(_global_width);
+                is_first_call = true;
                 cout << "Value successfully updated." << endl;
                 system("pause>0");
                 system("cls");
@@ -126,6 +131,7 @@ class GameEngine
                 }
                 system("cls");
                 player.setY(_global_height-2);
+                is_first_call = true;
                 cout << "Value successfully updated." << endl;
                 system("pause>0");
                 system("cls");
@@ -137,24 +143,70 @@ class GameEngine
             }
         } while (ans != '1' || ans != '2' || ans != '3');
     }
-
     //===============================================================================
-    /*static void updateEnemies()
+    static void resizeFieldModel()
     {
-        //field.reserve()
+        field.resize(_global_height);
+        for (uint32_t i = 0; i < _global_height; ++i)
+            field[i].resize(_global_width);
+    }
+    //===============================================================================
+    static void deleteKilledEnemy(const Point& killed)
+    {
+        field[killed.y][killed.x] = ' ';
+    }
+    //===============================================================================
+    static void updateFieldModel()
+    {
+        if (is_first_call)
+        {
+            resizeFieldModel();
+            is_first_call = false;
+        }
+
         // создаём структуру данных в соответствии с_global_width и _global_height
         for (uint32_t y = 0; y < _global_height; ++y)
         {
             for (uint32_t x = 0; x < _global_width; ++x)
             {
-                field[x][y];
+
+                if (player.x() == x && player.y()-1 == y)
+                {
+                    field[y][x] = '^';
+                    continue;
+                }
+                if (player.x() == x && player.y() == y)
+                {
+                    field[y][x] = 'v';
+                    continue;
+                }
+                if (player.x()-1 == x && player.y() == y)
+                {
+                    field[y][x] = '<';
+                    continue;
+                }
+                if (player.x()+1 == x && player.y() == y)
+                {
+                    field[y][x] = '>';
+                    continue;
+                }
+
+                if (y == 0 || x == 0 || y == _global_height-1 || x == _global_width-1)
+                {
+                    field[y][x] = '#';
+                }
+                else
+                {
+                    field[y][x] = ' ';
+                }
             }
         }
-
-    }*/
+    }
     //===============================================================================
-    static void printField(bool is_shooting = 0)
+    static void drawField(bool is_shooting = 0)
     {
+        /// ДЛЯ ОТРИСОВКИ ЛАЗЕРА (И ПОПАДАНИЯ) рекурсивно вызываем метод с параметром
+
         // стираем предыдущее поле перед рисованием нового
         if (is_shooting)
             system("cls");
@@ -163,46 +215,32 @@ class GameEngine
         {
             for (uint32_t x = 0; x < _global_width; ++x)
             {
+                // добавить условие о попадании во врага и 'X' на месте попадания,
+                // а также удаление врага из модели(вызов updateFieldModel() с параметром)
+
+                if (is_shooting && player.x() == x && field[y][x] == ENEMY)// доделать этот if на удаление именно ближайшего врага
+                {
+
+                    for (uint32_t height = _global_height; height > 0; --height)
+                    {
+                        if (field[height][x] == ENEMY)
+                        {
+                            cout << 'X';
+                            deleteKilledEnemy(Point{x, y});
+                        }
+                    }
+                }
 
 
-                // лазер не должен рисоваться на месте врагов, поэтому сначала враги
 
                 if (is_shooting && player.x() == x && player.y() != 0 && player.y() != _global_height-1 && y != 0 &&
-                                    y != _global_height-1 && y != _global_height-2 && y != _global_height-3)
+                    y != _global_height-1 && y != _global_height-2 && y != _global_height-3)
                 {
-                    cout << "|";
+                    cout << '|';
                     continue;
                 }
 
-                if (player.x() == x && player.y()-1 == y)
-                {
-                    cout << "^";
-                    continue;
-                }
-                if (player.x() == x && player.y() == y)
-                {
-                    cout << "v";
-                    continue;
-                }
-                if (player.x()-1 == x && player.y() == y)
-                {
-                    cout << "<";
-                    continue;
-                }
-                if (player.x()+1 == x && player.y() == y)
-                {
-                    cout << ">";
-                    continue;
-                }
-
-                if (y == 0 || x == 0 || y == _global_height-1 || x == _global_width-1)
-                {
-                    cout << '#';
-                }
-                else
-                {
-                    cout << ' ';
-                }
+                cout << field[y][x];
             }
             cout << endl;
         }
@@ -243,8 +281,7 @@ class GameEngine
             break;
 
         case ' ':
-            //player.shoot();
-            printField(true);
+            drawField(true);
             break;
         }
 
@@ -260,10 +297,11 @@ class GameEngine
     {
         system("cls");
 
+
         while (true)
         {
-            printField();
-            //updateEnemies();
+            updateFieldModel();
+            drawField();
         }
 
 
@@ -305,11 +343,13 @@ public:
     }
 };
 //===============================================================================
-uint32_t GameEngine::_global_width  = DEFAULT_GLOBAL_WIDTH;
-uint32_t GameEngine::_global_height = DEFAULT_GLOBAL_HEIGHT;
-uint32_t GameEngine::_score         = 0;
-uint32_t GameEngine::_delay         = 500;
+uint32_t GameEngine::_global_width     = DEFAULT_GLOBAL_WIDTH;
+uint32_t GameEngine::_global_height    = DEFAULT_GLOBAL_HEIGHT;
+uint32_t GameEngine::_score            = 0;
+uint32_t GameEngine::_delay            = 500;
 GameEngine::Player GameEngine::player;
+vector<vector<char>> GameEngine::field;
+bool GameEngine::is_first_call = true;
 //===============================================================================
 int main()
 {
