@@ -10,16 +10,19 @@ using std::endl;
 using std::wstring;
 using std::vector;
 
-static constexpr auto MAXIMUM_WIDTH = 100;
-static constexpr auto MINIMUM_WIDTH = 5;
-static constexpr auto MAXIMUM_HEIGHT = 50;
-static constexpr auto MINIMUM_HEIGHT = 10;
+static constexpr auto MAXIMUM_WIDTH  		= 100;
+static constexpr auto MINIMUM_WIDTH  		= 5;
+static constexpr auto MAXIMUM_HEIGHT 		= 50;
+static constexpr auto MINIMUM_HEIGHT 		= 10;
 
-static constexpr auto DEFAULT_GLOBAL_WIDTH = 15;
+static constexpr auto DEFAULT_GLOBAL_WIDTH  = 15;
 static constexpr auto DEFAULT_GLOBAL_HEIGHT = 10;
+static constexpr auto DEFAULT_DELAY         = 1000;
 
 #define ENEMY '@'
 
+// TODO: настройка аргументами командной строки
+// TODO: настройка _delay
 // TODO: UNICODE TEXT
 // TODO: 2 PLAYERS (Qt)
 // TODO: triangle as player
@@ -38,6 +41,7 @@ class GameEngine
     static uint32_t _score;
     static uint32_t _delay;
     static bool is_first_call; // for resizing field model before game starts
+    static bool _game_over;
 
 
 
@@ -154,6 +158,7 @@ class GameEngine
     static void deleteKilledEnemy(const Point& killed)
     {
         field[killed.y][killed.x] = ' ';
+        ++_score;
     }
     //===============================================================================
     static void updateFieldModel()
@@ -292,10 +297,45 @@ class GameEngine
 
         system("cls");
     }
-    //===============================================================================
-    static int initMainLoop()
+	//===============================================================================
+    static void addInvaders()
     {
+    	// метод передвигает всех врагов в сторону игрока и добавляет новый ряд
+    	// супостатов (в зависимости от режима, по умолчанию рандомно)
+    	// цикл проходится по модели снизу вверх и слева направо
+    	while (!(_game_over))
+    	{
+    		for (uint32_t y = _global_height-2; y >= 1; --y)
+        	{
+            	for (uint32_t x = 0; x < _global_width; ++x)
+            	{
+            		if (field[_global_height-3][x] == ENEMY)
+            		{
+            			// враги дошли до игрока - выход из циклов и конец игры (анимация и всё такое)
+
+            		}
+
+            		if (field[y][x] == ENEMY)
+            		{
+            			field[y][x] = ' ';
+            			field[y+1][x] = ENEMY;
+            		}
+
+            		if (y == 1 && x != 0 /*&& x != _global_width*/ && rand() % 2)
+            		{
+            			field[y][x] = ENEMY;
+            		}
+            	}
+            }
+    		std::this_thread::sleep_for(std::chrono::milliseconds(_delay));
+    	}
+    }
+    //===============================================================================
+    static void initGameLoop()
+    {
+    	srand(time(nullptr));
         system("cls");
+        thread enemies(addInvaders);
 
 
         while (true)
@@ -303,10 +343,7 @@ class GameEngine
             updateFieldModel();
             drawField();
         }
-
-
-
-        return 0;
+		enemies.detach(); // возможно нужно поставить до цикла
     }
     //===============================================================================
 public:
@@ -322,7 +359,7 @@ public:
             switch (ans)
             {
             case '1':
-                initMainLoop();
+                initGameLoop();
                 break;
 
             case '2':
@@ -346,10 +383,11 @@ public:
 uint32_t GameEngine::_global_width     = DEFAULT_GLOBAL_WIDTH;
 uint32_t GameEngine::_global_height    = DEFAULT_GLOBAL_HEIGHT;
 uint32_t GameEngine::_score            = 0;
-uint32_t GameEngine::_delay            = 500;
+uint32_t GameEngine::_delay            = DEFAULT_DELAY;
 GameEngine::Player GameEngine::player;
 vector<vector<char>> GameEngine::field;
-bool GameEngine::is_first_call = true;
+bool GameEngine::is_first_call 		   = true;
+bool GameEngine::_game_over            = false;
 //===============================================================================
 int main()
 {
