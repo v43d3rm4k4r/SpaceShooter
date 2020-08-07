@@ -1,4 +1,5 @@
 #include <iostream>
+#include <windows.h>
 #include <vector>
 #include <conio.h>
 #include <cctype>
@@ -17,7 +18,7 @@ static constexpr auto MINIMUM_HEIGHT 		= 10;
 
 static constexpr auto DEFAULT_GLOBAL_WIDTH  = 15;
 static constexpr auto DEFAULT_GLOBAL_HEIGHT = 10;
-static constexpr auto DEFAULT_DELAY         = 1000;
+static constexpr auto DEFAULT_DELAY         = 2000;
 
 #define ENEMY '@'
 
@@ -175,7 +176,7 @@ class GameEngine
         if (is_first_call)
         {
             resizeFieldModel();
-            //is_first_call = false;
+            is_first_call = false;
         }
 
         // создаём структуру данных в соответствии с_global_width и _global_height
@@ -221,12 +222,6 @@ class GameEngine
             }
         }
 
-        if (is_first_call)
-        {
-            field[2][2] = ENEMY;
-            is_first_call = false;
-        }
-
     }
     //===============================================================================
     static void drawField(bool is_shooting = 0)
@@ -234,7 +229,9 @@ class GameEngine
         /// ДЛЯ ОТРИСОВКИ ЛАЗЕРА (И ПОПАДАНИЯ) рекурсивно вызываем метод с параметром
 
         static bool is_enemy_killed = false;
-        is_enemy_killed = false;
+        is_enemy_killed = false; // чтоб не убивать всех в ряду
+        Point killed_enemy_coords = {0, 0};
+
         // стираем предыдущее поле перед рисованием нового
         if (is_shooting)
         {
@@ -258,7 +255,8 @@ class GameEngine
                         if (!is_enemy_killed && field[height][x] == ENEMY)
                         {
                             //cout << 'X';
-                            deleteKilledEnemy(Point{height, x});
+                            killed_enemy_coords = {height, x};
+                            deleteKilledEnemy(killed_enemy_coords);
                             is_enemy_killed = true;
                             break;
                         }
@@ -267,11 +265,17 @@ class GameEngine
 
 
 
-                if (is_shooting && field[y][player.x()] != ENEMY && player.x() == x && player.y() != 0 && player.y() != _global_height-1 && y != 0 &&
-                    y != _global_height-1 && y != _global_height-2 && y != _global_height-3)
+                /*if (is_shooting && player.x() == x && player.y() != 0 && player.y() != _global_height-1 && y != 0 &&
+                    y != _global_height-1 && y != _global_height-2 && y != _global_height-3)*/
+
+                if (is_shooting && player.x() == x)
                 {
-                    cout << '|';
-                    continue;
+                    if (y > killed_enemy_coords.y && y != _global_height-1 && y != _global_height-2 && y != _global_height-3)
+                    {
+                        cout << '|';
+                        continue;
+                    }
+
                 }
 
                 cout << field[y][x];
@@ -445,7 +449,7 @@ GameEngine::Mode GameEngine::_mode = Mode::default_mode;
 //===============================================================================
 int main()
 {
-    //GameEngine gEngine;
+    SetConsoleTitleW(L"SPACE SHOOTER");
 
     GameEngine::showMenu();
 
