@@ -27,7 +27,6 @@ static constexpr auto DEFAULT_DELAY         = 2000;
 // TODO: UNICODE TEXT
 // TODO: 2 PLAYERS (Qt)
 // TODO: triangle as player
-// TODO: new game animation (wave)
 //===============================================================================
 struct Point
 {
@@ -43,7 +42,6 @@ class GameEngine
         wave_mode
     };
 
-
     static uint32_t _global_width;
     static uint32_t _global_height;
     static uint32_t _score;
@@ -51,9 +49,6 @@ class GameEngine
     static bool is_first_call; // for resizing field model before game starts
     static bool _game_over;
     static Mode _mode;
-
-
-
 
     class Player
     {
@@ -101,7 +96,9 @@ class GameEngine
     {
         cout << "1.Set field width" << endl;
         cout << "2.Set field height" << endl;
-        cout << "3.Exit" << endl;
+        cout << "3.Set enemies appearing mode" << endl;
+        cout << "4.Set enemies appearing delay" << endl;
+        cout << "5.Exit" << endl;
 
         int ans = 0;
 
@@ -115,6 +112,7 @@ class GameEngine
                 cout << ">";
                 while (scanf(" %u", &_global_width) != 1 || _global_width > MAXIMUM_WIDTH || _global_width < MINIMUM_WIDTH)
                 {
+                    system("cls");
                     cout << "Invalid input." << endl;
                     _global_width = DEFAULT_GLOBAL_WIDTH;
                     system("pause>0");
@@ -136,6 +134,7 @@ class GameEngine
                 cout << ">";
                 while (scanf(" %u", &_global_height) != 1 || _global_height > MAXIMUM_HEIGHT || _global_height < MINIMUM_HEIGHT)
                 {
+                    system("cls");
                     cout << "Invalid input." << endl;
                     _global_height = DEFAULT_GLOBAL_HEIGHT;
                     system("pause>0");
@@ -152,10 +151,63 @@ class GameEngine
                 return;
 
             case '3':
+            {
+                system("cls");
+                cout << "1.Random mode" << endl;
+                cout << "2.Wave mode" << endl;
+                int mode = getch();
+
+                while (mode != '1' && mode != '2')
+                {
+                    cout << mode << endl;
+                    system("cls");
+                    cout << "Invalid input." << endl;
+                    system("pause>0");
+                    system("cls");
+                    cout << "1.Random mode" << endl;
+                    cout << "2.Wave mode" << endl;
+                    mode = getch();
+                }
+                system("cls");
+
+                if (mode == '1')
+                    _mode = Mode::default_mode;
+                if (mode == '2')
+                    _mode = Mode::wave_mode;
+
+                cout << "Mode successfully updated." << endl;
+                system("pause>0");
                 system("cls");
                 return;
             }
-        } while (ans != '1' && ans != '2' && ans != '3');
+
+            case '4':
+            {
+                system("cls");
+                cout << "Enter denemies appearing delay (in milliseconds)" << endl;
+                cout << ">";
+                while (scanf(" %u", &_delay) != 1)
+                {
+                    system("cls");
+                    cout << "Invalid input." << endl;
+                    _delay = DEFAULT_DELAY;
+                    system("pause>0");
+                    system("cls");
+                    cout << "Enter delay(in milliseconds)" << endl;
+                    cout << ">";
+                }
+                system("cls");
+                cout << "Value successfully updated." << endl;
+                system("pause>0");
+                system("cls");
+                return;
+            }
+
+            case '5':
+                system("cls");
+                return;
+            }
+        } while (ans != '1' && ans != '2' && ans != '3' && ans != '4' && ans != '5');
     }
     //===============================================================================
     static void resizeFieldModel()
@@ -221,7 +273,6 @@ class GameEngine
                 }
             }
         }
-
     }
     //===============================================================================
     static void drawField(bool is_shooting = 0)
@@ -244,10 +295,7 @@ class GameEngine
         {
             for (uint32_t x = 0; x < _global_width; ++x)
             {
-                // добавить условие о попадании во врага и 'X' на месте попадания,
-                // а также удаление врага из модели(вызов updateFieldModel() с параметром)
-
-                if (is_shooting && !is_enemy_killed && player.x() == x && field[y][x] == ENEMY)// доделать этот if на удаление именно ближайшего врага
+                if (is_shooting && !is_enemy_killed && player.x() == x && field[y][x] == ENEMY)
                 {
 
                     for (uint32_t height = _global_height-2; height > 0; --height)
@@ -264,13 +312,13 @@ class GameEngine
                 }
 
 
-
                 /*if (is_shooting && player.x() == x && player.y() != 0 && player.y() != _global_height-1 && y != 0 &&
                     y != _global_height-1 && y != _global_height-2 && y != _global_height-3)*/
 
                 if (is_shooting && player.x() == x)
                 {
-                    if (y > killed_enemy_coords.y && y != _global_height-1 && y != _global_height-2 && y != _global_height-3)
+                    if (y < player.y() && y > killed_enemy_coords.y && y != _global_height-1 && y != _global_height-2 && y != _global_height-3
+                        && y != 0 && y != 1)
                     {
                         cout << '|';
                         continue;
@@ -298,8 +346,9 @@ class GameEngine
         }
 
 
-
         // здесь дать время(delay) на действие
+        //SetTimer(0, nullptr, 1000, (TIMERPROC)addInvaders)
+
 
         int action = toupper(getch());
         //if (action == 'Ф') action = 'A';
@@ -319,6 +368,7 @@ class GameEngine
             break;
 
         case ' ':
+            //PlaySound(TEXT("..\\..\\sounds\\shoot_sound1.mp3"), nullptr, SND_FILENAME);
             drawField(true);
             break;
         }
@@ -334,25 +384,25 @@ class GameEngine
     {
     	// метод передвигает всех врагов в сторону игрока и добавляет новый ряд
     	// супостатов (в зависимости от режима, по умолчанию рандомно)
-    	// цикл проходится по модели снизу вверх и слева направо
-    	while (!(_game_over))
-    	{
-    		for (uint32_t y = _global_height-2; y >= 1; --y)
-        	{
-            	for (uint32_t x = 0; x < _global_width; ++x)
-            	{
-            		if (field[_global_height-3][x] == ENEMY)
-            		{
-            			// враги дошли до игрока - выход из циклов и конец игры (анимация и всё такое)
+        // цикл проходится по модели снизу вверх и слева направо
+        while (!(_game_over))
+        {
+            for (uint32_t y = _global_height-2; y >= 1; --y)
+            {
+                for (uint32_t x = 0; x < _global_width; ++x)
+                {
+                    if (field[_global_height-3][x] == ENEMY)
+                    {
+                        // враги дошли до игрока - выход из циклов и конец игры (анимация и всё такое)
                         _game_over = true;
                         break;
-            		}
+                    }
 
-            		if (field[y][x] == ENEMY)
-            		{
-            			field[y][x] = ' ';
-            			field[y+1][x] = ENEMY;
-            		}
+                    if (field[y][x] == ENEMY)
+                    {
+                        field[y][x] = ' ';
+                        field[y+1][x] = ENEMY;
+                    }
 
                     // добавляем челиков на последний ряд
                     if (_mode == Mode::default_mode)
@@ -370,24 +420,24 @@ class GameEngine
                         }
                     }
 
-            	}
+                }
             }
-    		std::this_thread::sleep_for(std::chrono::milliseconds(_delay));
-    	}
+            std::this_thread::sleep_for(std::chrono::milliseconds(_delay));
+        }
     }
     //===============================================================================
     static void initGameLoop()
     {
     	srand(time(nullptr));
         system("cls");
-        std::thread enemies(addInvaders);
+        //std::thread enemies(addInvaders);
 
 
         while (true)
         {
             if (_game_over)
             {
-                enemies.join(); // возможно нужно поставить до цикла
+                //enemies.join(); // возможно нужно поставить до цикла
                 system("cls");
                 cout << "GAME OVER" << endl;
                 cout << "SCORE = " << _score << endl;
@@ -423,7 +473,7 @@ public:
                 system("cls");
                 showSettings();
                 system("cls");
-                showMenu();
+                //showMenu();
                 break;
 
             case '3':
@@ -451,10 +501,8 @@ int main()
 {
     SetConsoleTitleW(L"SPACE SHOOTER");
 
-    GameEngine::showMenu();
-
-
-
+    while(true)
+        GameEngine::showMenu();
 
     return 0;
 }
