@@ -30,18 +30,27 @@ static constexpr auto DEFAULT_DELAY         = 1000;
 //===============================================================================
 struct Point
 {
-    uint32_t x;
     uint32_t y;
+    uint32_t x;
 };
 //===============================================================================
 class GameEngine
 {
+    enum Mode
+    {
+        default_mode,
+        wave_mode
+    };
+
+
     static uint32_t _global_width;
     static uint32_t _global_height;
     static uint32_t _score;
     static uint32_t _delay;
     static bool is_first_call; // for resizing field model before game starts
     static bool _game_over;
+    static Mode _mode;
+
 
 
 
@@ -145,7 +154,7 @@ class GameEngine
                 system("cls");
                 return;
             }
-        } while (ans != '1' || ans != '2' || ans != '3');
+        } while (ans != '1' && ans != '2' && ans != '3');
     }
     //===============================================================================
     static void resizeFieldModel()
@@ -166,7 +175,7 @@ class GameEngine
         if (is_first_call)
         {
             resizeFieldModel();
-            is_first_call = false;
+            //is_first_call = false;
         }
 
         // создаём структуру данных в соответствии с_global_width и _global_height
@@ -174,6 +183,11 @@ class GameEngine
         {
             for (uint32_t x = 0; x < _global_width; ++x)
             {
+                // не трогаем врагов
+                if (field[y][x] == ENEMY)
+                {
+                    continue;
+                }
 
                 if (player.x() == x && player.y()-1 == y)
                 {
@@ -206,15 +220,28 @@ class GameEngine
                 }
             }
         }
+
+        if (is_first_call)
+        {
+            field[2][2] = ENEMY;
+            is_first_call = false;
+        }
+
     }
     //===============================================================================
     static void drawField(bool is_shooting = 0)
     {
         /// ДЛЯ ОТРИСОВКИ ЛАЗЕРА (И ПОПАДАНИЯ) рекурсивно вызываем метод с параметром
 
+        static bool is_enemy_killed = false;
+        is_enemy_killed = false;
         // стираем предыдущее поле перед рисованием нового
         if (is_shooting)
+        {
             system("cls");
+
+        }
+
 
         for (uint32_t y = 0; y < _global_height; ++y)
         {
@@ -223,22 +250,24 @@ class GameEngine
                 // добавить условие о попадании во врага и 'X' на месте попадания,
                 // а также удаление врага из модели(вызов updateFieldModel() с параметром)
 
-                if (is_shooting && player.x() == x && field[y][x] == ENEMY)// доделать этот if на удаление именно ближайшего врага
+                if (is_shooting && !is_enemy_killed && player.x() == x && field[y][x] == ENEMY)// доделать этот if на удаление именно ближайшего врага
                 {
 
-                    for (uint32_t height = _global_height; height > 0; --height)
+                    for (uint32_t height = _global_height-2; height > 0; --height)
                     {
-                        if (field[height][x] == ENEMY)
+                        if (!is_enemy_killed && field[height][x] == ENEMY)
                         {
-                            cout << 'X';
-                            deleteKilledEnemy(Point{x, y});
+                            //cout << 'X';
+                            deleteKilledEnemy(Point{height, x});
+                            is_enemy_killed = true;
+                            break;
                         }
                     }
                 }
 
 
 
-                if (is_shooting && player.x() == x && player.y() != 0 && player.y() != _global_height-1 && y != 0 &&
+                if (is_shooting && field[y][player.x()] != ENEMY && player.x() == x && player.y() != 0 && player.y() != _global_height-1 && y != 0 &&
                     y != _global_height-1 && y != _global_height-2 && y != _global_height-3)
                 {
                     cout << '|';
@@ -271,7 +300,7 @@ class GameEngine
         int action = toupper(getch());
         //if (action == 'Ф') action = 'A';
         //if (action == 'В') action = 'D';
-        std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+        //std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
         switch (action)
         {
@@ -290,9 +319,8 @@ class GameEngine
             break;
         }
 
-        //std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+        //std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+        //std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
 
 
         system("cls");
@@ -312,7 +340,8 @@ class GameEngine
             		if (field[_global_height-3][x] == ENEMY)
             		{
             			// враги дошли до игрока - выход из циклов и конец игры (анимация и всё такое)
-
+                        _game_over = true;
+                        break;
             		}
 
             		if (field[y][x] == ENEMY)
@@ -321,10 +350,22 @@ class GameEngine
             			field[y+1][x] = ENEMY;
             		}
 
-            		if (y == 1 && x != 0 /*&& x != _global_width*/ && rand() % 2)
-            		{
-            			field[y][x] = ENEMY;
-            		}
+                    // добавляем челиков на последний ряд
+                    if (_mode == Mode::default_mode)
+                    {
+                        if (y == 1 && x != 0 && x != _global_width-1 && rand() % 2)
+                        {
+                            field[y][x] = ENEMY;
+                        }
+                    }
+                    else
+                    {
+                        if (y == 1 && x != 0 && x != _global_width-1)
+                        {
+                            field[y][x] = ENEMY;
+                        }
+                    }
+
             	}
             }
     		std::this_thread::sleep_for(std::chrono::milliseconds(_delay));
@@ -335,26 +376,38 @@ class GameEngine
     {
     	srand(time(nullptr));
         system("cls");
-        thread enemies(addInvaders);
+        std::thread enemies(addInvaders);
 
 
         while (true)
         {
+            if (_game_over)
+            {
+                enemies.join(); // возможно нужно поставить до цикла
+                system("cls");
+                cout << "GAME OVER" << endl;
+                cout << "SCORE = " << _score << endl;
+                system("pause>0");
+                break;
+            }
             updateFieldModel();
             drawField();
         }
-		enemies.detach(); // возможно нужно поставить до цикла
+
+
     }
     //===============================================================================
 public:
     static void showMenu()
     {
-        cout << "1.New game" << endl;
-        cout << "2.Settings" << endl;
-        cout << "3.Exit" << endl;
+        system("cls");
         int ans = 0;
 
         do{
+            cout << "1.New game" << endl;
+            cout << "2.Settings" << endl;
+            cout << "3.Exit" << endl;
+
             ans = getch();
             switch (ans)
             {
@@ -376,7 +429,7 @@ public:
                 exit(EXIT_SUCCESS);
                 break;
             }
-        } while (ans != '1' || ans != '2' || ans != '3');
+        } while (ans != '1' && ans != '2' && ans != '3');
     }
 };
 //===============================================================================
@@ -388,6 +441,7 @@ GameEngine::Player GameEngine::player;
 vector<vector<char>> GameEngine::field;
 bool GameEngine::is_first_call 		   = true;
 bool GameEngine::_game_over            = false;
+GameEngine::Mode GameEngine::_mode = Mode::default_mode;
 //===============================================================================
 int main()
 {
