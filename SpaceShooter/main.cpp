@@ -1,32 +1,86 @@
 #include <iostream>
-#include <windows.h>
 #include <vector>
-#include <conio.h>
 #include <cctype>
 #include <thread>
 #include <chrono>
+
+#if defined (_WIN32)
+#include <windows.h>
+#include <conio.h>
+#elif defined (__linux__)
+#include <termios.h>
+#endif
 
 using std::cout;
 using std::endl;
 using std::wstring;
 using std::vector;
 
-static constexpr auto MAXIMUM_WIDTH  		= 100;
-static constexpr auto MINIMUM_WIDTH  		= 5;
-static constexpr auto MAXIMUM_HEIGHT 		= 50;
-static constexpr auto MINIMUM_HEIGHT 		= 10;
+static constexpr auto MAXIMUM_WIDTH         = 100;
+static constexpr auto MINIMUM_WIDTH         = 5;
+static constexpr auto MAXIMUM_HEIGHT        = 50;
+static constexpr auto MINIMUM_HEIGHT        = 10;
 
-static constexpr auto DEFAULT_GLOBAL_WIDTH  = 15;
-static constexpr auto DEFAULT_GLOBAL_HEIGHT = 10;
-static constexpr auto DEFAULT_DELAY         = 2000;
+static constexpr auto DEFAULT_GLOBAL_WIDTH  = 20;
+static constexpr auto DEFAULT_GLOBAL_HEIGHT = 20;
+static constexpr auto DEFAULT_DELAY         = 3000;
 
 #define ENEMY '@'
+#define ESC 27
 
 // TODO: настройка аргументами командной строки
-// TODO: настройка _delay
 // TODO: UNICODE TEXT
 // TODO: 2 PLAYERS (Qt)
 // TODO: triangle as player
+//===============================================================================
+void clearConsole()
+{
+#if defined (_WIN32)
+    system("cls");
+#elif defined (__linux__)
+    system("clear");
+#endif
+}
+//===============================================================================
+#if defined (__linux__)
+static struct termios old, current;
+/* Initialize new terminal i/o settings */
+void initTermios(int echo)
+{
+    tcgetattr(0, &old); /* grab old terminal i/o settings */
+    current = old; /* make new settings same as old settings */
+    current.c_lflag &= ~ICANON; /* disable buffered i/o */
+    if (echo)
+    {
+        current.c_lflag |= ECHO; /* set echo mode */
+    }
+    else
+    {
+        current.c_lflag &= ~ECHO; /* set no echo mode */
+    }
+    tcsetattr(0, TCSANOW, &current); /* use these new terminal i/o settings now */
+}
+
+/* Restore old terminal i/o settings */
+void resetTermios(void)
+{
+    tcsetattr(0, TCSANOW, &old);
+}
+/* Read 1 character - echo defines echo mode */
+char getch_(int echo)
+{
+    char ch;
+    initTermios(echo);
+    ch = getchar();
+    resetTermios();
+    return ch;
+}
+/* Read 1 character without echo */
+char getch()
+{
+    return getch_(0);
+}
+#endif // only for linux
 //===============================================================================
 struct Point
 {
@@ -78,14 +132,16 @@ class GameEngine
             coords.x += 1;
         }
 
-        void setX(uint32_t x)
+        Player& setX(uint32_t x)
         {
             coords.x = x;
+            return *this;
         }
 
-        void setY(uint32_t y)
+        Player& setY(uint32_t y)
         {
             coords.y = y;
+            return *this;
         }
     };
 
@@ -107,52 +163,52 @@ class GameEngine
             switch (ans)
             {
             case '1':
-                system("cls");
+                clearConsole();
                 cout << "Enter field width (from " << MINIMUM_WIDTH << " to " << MAXIMUM_WIDTH << ")" << endl;
                 cout << ">";
                 while (scanf(" %u", &_global_width) != 1 || _global_width > MAXIMUM_WIDTH || _global_width < MINIMUM_WIDTH)
                 {
-                    system("cls");
+                    clearConsole();
                     cout << "Invalid input." << endl;
                     _global_width = DEFAULT_GLOBAL_WIDTH;
-                    system("pause>0");
-                    system("cls");
+                    getch();
+                    clearConsole();
                     cout << "Enter field width (from " << MINIMUM_WIDTH << " to " << MAXIMUM_WIDTH << ")" << endl;
                     cout << ">";
                 }
-                system("cls");
+                clearConsole();
                 //player.setX(_global_width);
                 is_first_call = true;
                 cout << "Value successfully updated." << endl;
-                system("pause>0");
-                system("cls");
+                getch();
+                clearConsole();
                 return;
 
             case '2':
-                system("cls");
+                clearConsole();
                 cout << "Enter field height (from " << MINIMUM_HEIGHT << " to " << MAXIMUM_HEIGHT << ")" << endl;
                 cout << ">";
                 while (scanf(" %u", &_global_height) != 1 || _global_height > MAXIMUM_HEIGHT || _global_height < MINIMUM_HEIGHT)
                 {
-                    system("cls");
+                    clearConsole();
                     cout << "Invalid input." << endl;
                     _global_height = DEFAULT_GLOBAL_HEIGHT;
-                    system("pause>0");
-                    system("cls");
+                    getch();
+                    clearConsole();
                     cout << "Enter field height (from " << MINIMUM_HEIGHT << " to " << MAXIMUM_HEIGHT << ")" << endl;
                     cout << ">";
                 }
-                system("cls");
+                clearConsole();
                 player.setY(_global_height-2);
                 is_first_call = true;
                 cout << "Value successfully updated." << endl;
-                system("pause>0");
-                system("cls");
+                getch();
+                clearConsole();
                 return;
 
             case '3':
             {
-                system("cls");
+                clearConsole();
                 cout << "1.Random mode" << endl;
                 cout << "2.Wave mode" << endl;
                 int mode = getch();
@@ -160,15 +216,15 @@ class GameEngine
                 while (mode != '1' && mode != '2')
                 {
                     cout << mode << endl;
-                    system("cls");
+                    clearConsole();
                     cout << "Invalid input." << endl;
-                    system("pause>0");
-                    system("cls");
+                    getch();
+                    clearConsole();
                     cout << "1.Random mode" << endl;
                     cout << "2.Wave mode" << endl;
                     mode = getch();
                 }
-                system("cls");
+                clearConsole();
 
                 if (mode == '1')
                     _mode = Mode::default_mode;
@@ -176,35 +232,35 @@ class GameEngine
                     _mode = Mode::wave_mode;
 
                 cout << "Mode successfully updated." << endl;
-                system("pause>0");
-                system("cls");
+                getch();
+                clearConsole();
                 return;
             }
 
             case '4':
             {
-                system("cls");
+                clearConsole();
                 cout << "Enter denemies appearing delay (in milliseconds)" << endl;
                 cout << ">";
                 while (scanf(" %u", &_delay) != 1)
                 {
-                    system("cls");
+                    clearConsole();
                     cout << "Invalid input." << endl;
                     _delay = DEFAULT_DELAY;
-                    system("pause>0");
-                    system("cls");
+                    getch();
+                    clearConsole();
                     cout << "Enter delay(in milliseconds)" << endl;
                     cout << ">";
                 }
-                system("cls");
+                clearConsole();
                 cout << "Value successfully updated." << endl;
-                system("pause>0");
-                system("cls");
+                getch();
+                clearConsole();
                 return;
             }
 
             case '5':
-                system("cls");
+                clearConsole();
                 return;
             }
         } while (ans != '1' && ans != '2' && ans != '3' && ans != '4' && ans != '5');
@@ -215,6 +271,7 @@ class GameEngine
         field.resize(_global_height);
         for (uint32_t i = 0; i < _global_height; ++i)
             field[i].resize(_global_width);
+        player.setX(_global_width / 2).setY(_global_height - 2);
     }
     //===============================================================================
     static void deleteKilledEnemy(const Point& killed)
@@ -286,7 +343,7 @@ class GameEngine
         // стираем предыдущее поле перед рисованием нового
         if (is_shooting)
         {
-            system("cls");
+            clearConsole();
 
         }
 
@@ -332,10 +389,10 @@ class GameEngine
         }
         cout << endl << endl;
 
-        for (uint32_t i = 0; i < _global_width - 5; ++i) cout << ' ';
+        for (uint32_t i = 0; i < _global_width - 5; ++i)
+            cout << ' ';
+
         cout << "SCORE = " << _score << endl;
-
-
 
 
         // выходим здесь если рекурсивно вошли "выстрелить"
@@ -371,19 +428,23 @@ class GameEngine
             //PlaySound(TEXT("..\\..\\sounds\\shoot_sound1.mp3"), nullptr, SND_FILENAME);
             drawField(true);
             break;
+
+        case ESC:
+            _game_over = true;
+            break;
         }
 
         //std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
         //std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
 
 
-        system("cls");
+        clearConsole();
     }
-	//===============================================================================
+    //===============================================================================
     static void addInvaders()
     {
-    	// метод передвигает всех врагов в сторону игрока и добавляет новый ряд
-    	// супостатов (в зависимости от режима, по умолчанию рандомно)
+        // метод передвигает всех врагов в сторону игрока и добавляет новый ряд
+        // супостатов (в зависимости от режима, по умолчанию рандомно)
         // цикл проходится по модели снизу вверх и слева направо
         while (!(_game_over))
         {
@@ -428,20 +489,20 @@ class GameEngine
     //===============================================================================
     static void initGameLoop()
     {
-    	srand(time(nullptr));
-        system("cls");
-        //std::thread enemies(addInvaders);
+        srand(time(nullptr));
+        clearConsole();
+        std::thread enemies(addInvaders);
 
 
         while (true)
         {
             if (_game_over)
             {
-                //enemies.join(); // возможно нужно поставить до цикла
-                system("cls");
+                enemies.join(); // возможно нужно поставить до цикла
+                clearConsole();
                 cout << "GAME OVER" << endl;
                 cout << "SCORE = " << _score << endl;
-                system("pause>0");
+                getch();
                 break;
             }
             updateFieldModel();
@@ -450,14 +511,26 @@ class GameEngine
 
 
     }
+    static void clearField()
+    {
+        for (uint32_t y = _global_height-2; y >= 1; --y)
+        {
+            for (uint32_t x = 0; x < _global_width; ++x)
+            {
+                field[y][x] = ' ';
+            }
+        }
+    }
+
     //===============================================================================
 public:
     static void showMenu()
     {
-        system("cls");
+        clearConsole();
         int ans = 0;
 
         do{
+            clearConsole();
             cout << "1.New game" << endl;
             cout << "2.Settings" << endl;
             cout << "3.Exit" << endl;
@@ -467,19 +540,22 @@ public:
             {
             case '1':
                 initGameLoop();
+                clearField();
+                _game_over = false;
+                is_first_call = true;
                 break;
 
             case '2':
-                system("cls");
+                clearConsole();
                 showSettings();
-                system("cls");
+                clearConsole();
                 //showMenu();
                 break;
 
             case '3':
-                system("cls");
+                clearConsole();
                 cout << "Bye!" << endl;
-                system("pause>0");
+                getch();
                 exit(EXIT_SUCCESS);
                 break;
             }
@@ -493,13 +569,15 @@ uint32_t GameEngine::_score            = 0;
 uint32_t GameEngine::_delay            = DEFAULT_DELAY;
 GameEngine::Player GameEngine::player;
 vector<vector<char>> GameEngine::field;
-bool GameEngine::is_first_call 		   = true;
+bool GameEngine::is_first_call         = true;
 bool GameEngine::_game_over            = false;
 GameEngine::Mode GameEngine::_mode = Mode::default_mode;
 //===============================================================================
 int main()
 {
+#if defined (_WIN32)
     SetConsoleTitleW(L"SPACE SHOOTER");
+#endif
 
     while(true)
         GameEngine::showMenu();
