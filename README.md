@@ -4,5 +4,6 @@
   ![Image alt](https://github.com/v43d3rm4k4r/SpaceShooter/raw/master/images/image1.PNG)
   
 # Current problems/bugs/imperfections:  
-- no sounds;
+- no sounds at Linux;
 - could be some compile problems in Qt Creator on Linux, related to pthread library. In this case need to compile with terminal using -lpthread key;
+- on Windows need to compile with -lwinmm key to play sounds;
