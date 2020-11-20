@@ -348,9 +348,7 @@ class GameEngine
         if (is_shooting)
         {
             clearConsole();
-
         }
-
 
         for (uint32_t y = 0; y < _global_height; ++y)
         {
@@ -358,7 +356,6 @@ class GameEngine
             {
                 if (is_shooting && !is_enemy_killed && player.x() == x && field[y][x] == ENEMY)
                 {
-
                     for (uint32_t height = _global_height-2; height > 0; --height)
                     {
                         if (!is_enemy_killed && field[height][x] == ENEMY)
@@ -378,8 +375,9 @@ class GameEngine
 
                 if (is_shooting && player.x() == x)
                 {
-                    if (y < player.y() && y > killed_enemy_coords.y && y != _global_height-1 && y != _global_height-2 && y != _global_height-3
-                        && y != 0 && y != 1)
+                    if (y < player.y() && y > killed_enemy_coords.y && 
+                        y != _global_height-1 && y != _global_height-2 && 
+                        y != _global_height-3 && y != 0 /*&& y != 1*/)
                     {
                         cout << '|';
                         continue;
@@ -396,13 +394,13 @@ class GameEngine
         for (uint32_t i = 0; i < _global_width - 5; ++i)
             cout << ' ';
 
-        cout << "SCORE = " << _score << endl;
+        cout << "SCORE: " << _score << endl;
 
 
         // выходим здесь если рекурсивно вошли "выстрелить"
         if (is_shooting)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
             return;
         }
 
@@ -455,7 +453,7 @@ class GameEngine
     static void addInvaders()
     {
         // метод передвигает всех врагов в сторону игрока и добавляет новый ряд
-        // супостатов (в зависимости от режима, по умолчанию рандомно)
+        // супостатов (в зависимости от режима, по умолчанию рандомно с вероятностью 50%)
         // цикл проходится по модели снизу вверх и слева направо
         while (!(_game_over))
         {
@@ -513,6 +511,7 @@ class GameEngine
                 cout << "GAME OVER" << endl;
                 cout << "SCORE = " << _score << endl;
                 getch();
+                _score = 0;
                 break;
             }
             updateFieldModel();
@@ -586,5 +585,5 @@ GameEngine::Player GameEngine::player;
 vector<vector<char>> GameEngine::field;
 bool GameEngine::is_first_call         = true;
 bool GameEngine::_game_over            = false;
-GameEngine::Mode GameEngine::_mode = Mode::default_mode;
+GameEngine::Mode GameEngine::_mode     = Mode::default_mode;
 bool GameEngine::_play_sounds          = false;
