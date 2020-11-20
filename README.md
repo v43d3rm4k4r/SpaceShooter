@@ -1,6 +1,6 @@
 # SpaceShooter
  An attempt at writing a game from scratch at free time.
- - on Windows need to compile with -lwinmm key to play sounds;
+ On Windows need to compile with -lwinmm key to play sounds.
  
   ![Image alt](https://github.com/v43d3rm4k4r/SpaceShooter/raw/master/images/image1.PNG)
   
