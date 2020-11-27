@@ -382,9 +382,7 @@ class GameEngine
                         cout << '|';
                         continue;
                     }
-
                 }
-
                 cout << field[y][x];
             }
             cout << endl;
@@ -489,7 +487,6 @@ class GameEngine
                             field[y][x] = ENEMY;
                         }
                     }
-
                 }
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(_delay));
