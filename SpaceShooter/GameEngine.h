@@ -93,10 +93,10 @@ struct Point
 //===============================================================================
 class GameEngine
 {
-    enum Mode
+    enum class Mode : uint8_t
     {
-        default_mode,
-        wave_mode
+        DefaultMode,
+        WaveMode
     };
 
     static uint32_t _global_width;
@@ -231,9 +231,9 @@ class GameEngine
                 clearConsole();
 
                 if (mode == '1')
-                    _mode = Mode::default_mode;
+                    _mode = Mode::DefaultMode;
                 if (mode == '2')
-                    _mode = Mode::wave_mode;
+                    _mode = Mode::WaveMode;
 
                 cout << "Mode successfully updated." << endl;
                 getch();
@@ -286,6 +286,7 @@ class GameEngine
     //===============================================================================
     static void updateFieldModel()
     {
+        //
         if (is_first_call)
         {
             resizeFieldModel();
@@ -336,19 +337,19 @@ class GameEngine
         }
     }
     //===============================================================================
-    static void drawField(bool is_shooting = 0)
+    static void drawField(bool is_shooting = false, bool auto_update = false)
     {
-        /// ДЛЯ ОТРИСОВКИ ЛАЗЕРА (И ПОПАДАНИЯ) рекурсивно вызываем метод с параметром
+        /// ДЛЯ ОТРИСОВКИ ЛАЗЕРА (И ПОПАДАНИЯ) рекурсивно вызываем метод с параметром is_shooting
 
         static bool is_enemy_killed = false;
         is_enemy_killed = false; // чтоб не убивать всех в ряду
         Point killed_enemy_coords = {0, 0};
 
         // стираем предыдущее поле перед рисованием нового
-        if (is_shooting)
-        {
+        //if (is_shooting)
+        //{
             clearConsole();
-        }
+        //}
 
         for (uint32_t y = 0; y < _global_height; ++y)
         {
@@ -406,6 +407,10 @@ class GameEngine
         // здесь дать время(delay) на действие
         //SetTimer(0, nullptr, 1000, (TIMERPROC)addInvaders)
 
+        // если зашли в другом потоке для авто обновления поля, то нам не нужен ввод
+        // игрока, поэтому выходим
+        if (auto_update)
+            return;
 
         int action = toupper(getch());
         //if (action == 'Ф') action = 'A';
@@ -453,8 +458,21 @@ class GameEngine
         // метод передвигает всех врагов в сторону игрока и добавляет новый ряд
         // супостатов (в зависимости от режима, по умолчанию рандомно с вероятностью 50%)
         // цикл проходится по модели снизу вверх и слева направо
-        while (!(_game_over))
+
+        bool is_first_call = true;
+
+        while (!_game_over)
         {
+            clearConsole();
+            // пропускаем первую отрисовку, т.к. в основном игровом цикле уже произошла
+            // отрисовка
+            if (is_first_call)
+            {
+                is_first_call = false;
+                std::this_thread::sleep_for(std::chrono::milliseconds(_delay));
+                continue;
+            }
+
             for (uint32_t y = _global_height-2; y >= 1; --y)
             {
                 for (uint32_t x = 0; x < _global_width; ++x)
@@ -473,7 +491,7 @@ class GameEngine
                     }
 
                     // добавляем челиков на последний ряд
-                    if (_mode == Mode::default_mode)
+                    if (_mode == Mode::DefaultMode)
                     {
                         if (y == 1 && x != 0 && x != _global_width-1 && rand() % 2)
                         {
@@ -489,6 +507,8 @@ class GameEngine
                     }
                 }
             }
+
+            drawField(false, true);
             std::this_thread::sleep_for(std::chrono::milliseconds(_delay));
         }
     }
@@ -503,10 +523,11 @@ class GameEngine
         {
             if (_game_over)
             {
-                enemies.join(); // возможно нужно поставить до цикла
+                enemies.join();
                 clearConsole();
+                // TODO: GAME OVER ANIMATION
                 cout << "GAME OVER" << endl;
-                cout << "SCORE = " << _score << endl;
+                cout << "SCORE:  " << _score << endl;
                 getch();
                 _score = 0;
                 break;
@@ -514,9 +535,8 @@ class GameEngine
             updateFieldModel();
             drawField();
         }
-
-
     }
+
     static void clearField()
     {
         for (uint32_t y = _global_height-2; y >= 1; --y)
@@ -582,5 +602,5 @@ GameEngine::Player GameEngine::player;
 vector<vector<char>> GameEngine::field;
 bool GameEngine::is_first_call         = true;
 bool GameEngine::_game_over            = false;
-GameEngine::Mode GameEngine::_mode     = Mode::default_mode;
+GameEngine::Mode GameEngine::_mode     = Mode::DefaultMode;
 bool GameEngine::_play_sounds          = false;
