@@ -4,9 +4,15 @@
  On Windows need to compile with -lwinmm key to play sounds:  
  `g++ main.cpp -lwinmm -o SpaceShooter.exe`
  
+ Implemented features:
+ - game field width and height settings;
+ - enemy spawn mode settings;
+ - game speed settings;
+ - sounds (only on Windows);
+ 
  ---
  
-  ![Image alt](https://github.com/v43d3rm4k4r/SpaceShooter/raw/master/images/image1.PNG)
+  ![Image alt](https://github.com/vaedermakar/SpaceShooter/raw/master/images/image1.PNG)
   
   
 ### Current problems/bugs/imperfections:  
