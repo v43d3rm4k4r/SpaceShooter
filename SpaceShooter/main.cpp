@@ -2,6 +2,8 @@
 
 int main(int argc, char* argv[])
 {
+    std::ios_base::sync_with_stdio(false);
+
 #if defined (_WIN32)
     SetConsoleTitleW(L"SPACE SHOOTER");
 #endif
