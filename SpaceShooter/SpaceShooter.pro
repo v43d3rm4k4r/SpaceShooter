@@ -1,5 +1,5 @@
 TEMPLATE = app
-CONFIG += console
+CONFIG += console1
 CONFIG -= app_bundle
 CONFIG -= qt
 CONFIG += -lwinmm
