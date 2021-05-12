@@ -1,8 +1,11 @@
 TEMPLATE = app
-CONFIG += console c++11
+CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= qt
 CONFIG += -lwinmm
+
+QMAKE_CXXFLAGS += -std=c++14 -pthread
+LIBS += -pthread
 
 SOURCES += \
         main.cpp
