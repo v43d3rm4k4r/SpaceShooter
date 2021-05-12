@@ -1,4 +1,5 @@
 #include "GameEngine.h"
+#include <cstring>
 
 int main(int argc, char* argv[])
 {
