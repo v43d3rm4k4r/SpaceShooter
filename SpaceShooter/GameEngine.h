@@ -432,7 +432,9 @@ class GameEngine
         case ' ':
             if (_play_sounds)
             {
+#               if defined (_WIN32)
                 PlaySound(TEXT("..\\sounds\\shoot_sound1.wav"), nullptr, SND_FILENAME | SND_ASYNC);
+#               endif
             }
             drawField(true);
             break;
@@ -441,7 +443,9 @@ class GameEngine
             _game_over = true;
             if (_play_sounds)
             {
+#               if defined (_WIN32)
                 PlaySound(TEXT("..\\sounds\\fail_sound1.wav"), nullptr, SND_FILENAME | SND_ASYNC);
+#               endif
             }
             break;
         }
