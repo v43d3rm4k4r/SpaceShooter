@@ -8,7 +8,7 @@
  - game field width and height settings;
  - enemy spawn mode settings;
  - game speed settings;
- - sounds (only on Windows);
+ - sounds (only on Windows).
  
  ---
  
